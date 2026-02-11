@@ -215,7 +215,3 @@
   - Secondary DNS mode
 
 
- ## LICENSE
- 
-
-  MIT License
