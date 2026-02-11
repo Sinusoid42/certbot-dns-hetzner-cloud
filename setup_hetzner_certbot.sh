@@ -18,8 +18,11 @@ sudo python3 -m pip install -e . --break-system-packages
 sudo chown root:root "$CREDENTIALS_FILE"
 sudo chmod 600 "$CREDENTIALS_FILE"
 
+#Example multi-domain or wildcard usage.
 DOMAINS=(
   "mydomain.com"
+  "api.mydomain.com"
+  "www.mydomain.com"
 )
 
 DOMAIN_ARGS=""
