@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e
 
-REPO_DIR="/home/dev/certbot-dns-hetzner"
+# Change the following line, according to your own environment if you clone the repository and use it locally.
+REPO_DIR="/path/to/the/repository/certbot-dns-hetzner"
 CREDENTIALS_FILE="$REPO_DIR/credentials.ini"
 
 if [ ! -f "$CREDENTIALS_FILE" ]; then
