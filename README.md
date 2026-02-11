@@ -1,6 +1,6 @@
 ========================================================================
-  certbot-dns-hetzner (Cloud API Edition – 2026)
-  ========================================================================
+certbot-dns-hetzner (Cloud API Edition – 2026)
+========================================================================
 
   This repository provides a Certbot DNS plugin for the Hetzner Cloud DNS API
   (Hetzner Console DNS – 2026 generation).
