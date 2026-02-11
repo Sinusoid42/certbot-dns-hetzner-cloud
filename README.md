@@ -1,90 +1,222 @@
-# Hetzner DNS Authenticator certbot plugin
-[![codecov](https://codecov.io/gh/ctrlaltcoop/certbot-dns-hetzner/branch/main/graph/badge.svg?token=3XJVTPZ0AM)](https://codecov.io/gh/ctrlaltcoop/certbot-dns-hetzner)
-![Tests, Coverage](https://github.com/ctrlaltcoop/certbot-dns-hetzner/workflows/Tests,%20Coverage/badge.svg?branch=main)
-[![PyPI version](https://badge.fury.io/py/certbot-dns-hetzner.svg)](https://badge.fury.io/py/certbot-dns-hetzner)
-![Supported Python](https://img.shields.io/pypi/pyversions/certbot-dns-hetzner)
+========================================================================
+  certbot-dns-hetzner (Cloud API Edition – 2026)
+  ========================================================================
 
-This certbot plugin automates the process of
-completing a dns-01 challenge by creating, and
-subsequently removing, TXT records using the Hetzner DNS or cloud API.
+  This repository provides a Certbot DNS plugin for the Hetzner Cloud DNS API
+  (Hetzner Console DNS – 2026 generation).
 
-## Requirements
+  IMPORTANT
+  ------------------------------------------------------------------------
+  • This version supports ONLY the Hetzner Cloud DNS API.
+  • It does NOT support the legacy DNS Console API (dns.hetzner.com).
+  • It does NOT support HTTP-01 challenges.
+  • It does NOT support TLS-ALPN-01 challenges.
+  • It supports DNS-01 challenges only.
+  • Your DNS zone must already be migrated to Hetzner Console DNS.
 
-### For certbot < 2
+  If your zone is still using the legacy DNS Console API, migrate it first.
 
-Notice that this plugin is only supporting certbot>=2.0 from 2.0 onwards. For older certbot versions use 1.x releases.
+  ========================================================================
+  OVERVIEW
+  ========================================================================
 
-## Install
+  This plugin allows Certbot to:
 
-Install this package via pip in the same python environment where you installed your certbot.
+  • Create _acme-challenge TXT records via Hetzner Cloud DNS API
+  • Validate DNS-01 challenges
+  • Remove TXT records after validation
+  • Issue wildcard certificates
+  • Use Hetzner’s RRset-based DNS model correctly
 
-```
-pip install certbot-dns-hetzner
-```
+  The implementation uses:
 
-## Usage
+      https://api.hetzner.cloud/v1
 
-To start using DNS authentication for the Hetzner DNS or cloud API, pass the following arguments on certbot's command line:
+  and authenticates using:
 
-| Option                                                     | Description                                      |
-|------------------------------------------------------------|--------------------------------------------------|
-| `--authenticator dns-hetzner`                              | select the authenticator plugin (Required)       |
-| `--dns-hetzner-credentials`                                | Hetzner DNS API credentials INI file. (Required) |
-| `--dns-hetzner-propagation-seconds`                        | Seconds to wait for the TXT record to propagate  |
+      Authorization: Bearer <CLOUD_API_TOKEN>
 
-Starting version 3.x depending on the given credential either the old DNS API or the new cloud API will be used.  
-Note: Make sure to use the correct credentials for the different domains. Only one API is working for one domain.
+  ========================================================================
+  REQUIREMENTS
+  ========================================================================
 
-Pre 3.x only the Hetzner DNS API is supported.
+  • Python 3.8+
+  • Certbot (APT or pip installation recommended; snap not recommended)
+  • Hetzner Cloud API token (Console → Security → API Tokens)
+  • DNS zone migrated to Hetzner Console DNS
+  • Proper firewall allowing outbound HTTPS (TCP 443)
 
-## Credentials
+  ========================================================================
+  INSTALLATION
+  ========================================================================
 
-From the hetzner DNS control panel at https://dns.hetzner.com go to "API Tokens" and add a personal access token.  
-Please make sure to use the absolute path - some users experienced problems with relative paths.  
+  IMPORTANT: This repository must be installed in the SAME Python
+  environment that Certbot uses.
 
-An example ``credentials.ini`` file:
+  Step 1 — Navigate into repository:
 
-```ini
-dns_hetzner_api_token = nohnah4zoo9Kiejee9aGh0thoopee2sa
-```
-## Examples
-To acquire a certificate for `example.com`
-```shell script
-certbot certonly \\
- --authenticator dns-hetzner \\
- --dns-hetzner-credentials /path/to/my/hetzner.ini \\
- -d example.com
-```
+      cd /home/dev/certbot-dns-hetzner
 
-To acquire a certificate for ``*.example.com``
-```shell script
-   certbot certonly \\
-     --authenticator dns-hetzner \\
-     --dns-hetzner-credentials /path/to/my/hetzner.ini \\
-     -d '*.example.com'
-```
+  Step 2 — Remove any previously installed versions:
 
-## Troubleshooting
+      sudo python3 -m pip uninstall -y certbot-dns-hetzner || true
 
-### Plugin not showing up
-If `certbot plugins` does not show the installed plugin, you might need to set `CERTBOT_PLUGIN_PATH`.  
-```
-CERTBOT_PLUGIN_PATH=/usr/local/lib/python3.X/site-packages/ certbot renew
-```  
-[See letsencrypt community thread](https://community.letsencrypt.org/t/how-do-i-make-certbot-find-use-an-installed-plugin/198647/5)
+  Step 3 — Install this repository in editable mode:
 
-### Encountered exception during recovery: requests.exceptions.HTTPError: 404 Client Error: Not Found for url: https://dns.hetzner.com/api/v1/zones?name=<MYDOMAIN>
-You are using an old token and try to update a domain already migrated to the cloud API.  
-Please update the credentials.
+      sudo python3 -m pip install -e . --break-system-packages
 
-### Renewing certificate fails
-Please ensure to use an absolute path for the credentials file - some users experienced problems with relative paths.
+  Step 4 — Verify correct plugin path:
 
-### Not working with snap
-We did not nor plan to support snap - it was created from this [repo](https://github.com/BigMichi1/certbot-dns-hetzner).  
-Feel free to start a new snap package yourself - we would happily link it here.
+      sudo python3 -c "import certbot_dns_hetzner; print(certbot_dns_hetzner.__file__)"
 
-## Thanks to
+  The printed path MUST point to your local repository.
 
-Of course certbot, which examples and documentation I used to implement this plugin. And to https://github.com/m42e/certbot-dns-ispconfig which served as an excellent example and README template as well.
+  ========================================================================
+  CREDENTIALS FILE
+  ========================================================================
 
+  Create credentials.ini:
+
+      api_token = YOUR_HETZNER_CLOUD_API_TOKEN
+
+  Example location:
+
+      /home/dev/certbot-dns-hetzner/credentials.ini
+
+  Secure it:
+
+      sudo chown root:root /home/dev/certbot-dns-hetzner/credentials.ini
+      sudo chmod 600 /home/dev/certbot-dns-hetzner/credentials.ini
+
+  ========================================================================
+  AUTOMATED CERTIFICATE ISSUING
+  ========================================================================
+
+  This repository includes:
+
+      setup_hetzner_certbot.sh
+
+  This script:
+
+  • Installs the plugin in editable mode
+  • Validates credentials file
+  • Ensures correct permissions
+  • Issues certificates for predefined domains
+  • Works with firewall-restricted environments
+  • Uses TLS-enforced API communication (HTTPS only)
+
+  REQUIRED CHANGES FOR USAGE:
+  • The path/to/local/repository has to be changed, given your personal Environment
+    This is present in the 'setupo_hetzner_certbot.sh' file allowing you to automate the certificate issuing.
+
+  Example execution:
+
+      ./setup_hetzner_certbot.sh
+
+  ========================================================================
+  MANUAL CERTIFICATE ISSUE
+  ========================================================================
+
+  Example multi-domain certificate:
+
+      sudo certbot certonly \
+        --authenticator dns-hetzner \
+        --dns-hetzner-credentials /home/dev/certbot-dns-hetzner/credentials.ini \
+        --dns-hetzner-propagation-seconds 60 \
+        -d mydomain.net \
+        -d auth.mydomain.net \
+        -d console.mydomain.net \
+        -d api.mydomain.net \
+        -d www.mydomain.net
+
+  Wildcard example:
+
+      sudo certbot certonly \
+        --authenticator dns-hetzner \
+        --dns-hetzner-credentials /home/dev/certbot-dns-hetzner/credentials.ini \
+        --dns-hetzner-propagation-seconds 60 \
+        -d mydomain.net \
+        -d '*.mydomain.net'
+
+  ========================================================================
+  HOW THE PLUGIN WORKS (TECHNICAL DETAILS)
+  ========================================================================
+
+  Hetzner Cloud DNS uses an RRset-based model.
+
+  TXT records are managed via:
+
+      POST /v1/zones/{zone}/rrsets/{name}/TXT/actions/add_records
+      POST /v1/zones/{zone}/rrsets/{name}/TXT/actions/remove_records
+
+  The plugin:
+
+  1. Resolves zone name
+  2. Converts FQDN to relative RRset name
+  3. Adds quoted TXT validation value
+  4. Waits propagation period
+  5. Removes validation TXT after challenge
+
+  All communication occurs over HTTPS (TLS enforced).
+
+  ========================================================================
+  TROUBLESHOOTING
+  ========================================================================
+
+  401 Unauthorized
+  ----------------
+  • Ensure you are using a Hetzner Cloud API token
+  • Do NOT use DNS Console API tokens
+  • Ensure correct API permissions (DNS read/write)
+  • Verify certbot imports the correct plugin path
+
+  Check:
+
+      which certbot
+      certbot --version
+      sudo python3 -c "import certbot_dns_hetzner; print(certbot_dns_hetzner.__file__)"
+
+  If certbot comes from /snap/bin/certbot,
+  pip-installed plugins will NOT work.
+
+  DNS Propagation Failure
+  -----------------------
+  Increase propagation wait time:
+
+      --dns-hetzner-propagation-seconds 120
+
+  Credentials Permission Warning
+  ------------------------------
+  Ensure credentials file is 600 and owned by root.
+
+  ========================================================================
+  SECURITY NOTES
+  ========================================================================
+
+  • Never expose API tokens
+  • Use project-scoped tokens when possible
+  • Keep credentials file restricted (chmod 600)
+  • Rotate tokens periodically
+  • Do not commit credentials into repository
+
+  ========================================================================
+  COMPATIBILITY
+  ========================================================================
+
+  Supported:
+  • Hetzner Cloud DNS (Console DNS 2026+)
+  • DNS-01 challenge
+  • Wildcard certificates
+  • Firewall-restricted environments (HTTPS outbound)
+
+  Not Supported:
+  • Legacy DNS Console API
+  • HTTP-01
+  • TLS-ALPN-01
+  • Secondary DNS mode
+
+  ========================================================================
+  LICENSE
+  ========================================================================
+
+  MIT License
